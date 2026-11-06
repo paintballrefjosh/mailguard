@@ -1,0 +1,5 @@
+# Whitelisted client IPs — bypass RBL checks
+# Format: ip.ad.dr.ess    OK
+# Examples:
+# 203.0.113.10      OK
+# 198.51.100.0/24   OK

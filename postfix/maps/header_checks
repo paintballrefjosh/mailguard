@@ -1,0 +1,13 @@
+# Log headers for MailGuard log shipper
+# WARN logs the header to the mail log without affecting delivery
+
+# Subject and From — for mail log display and From-address blocklist
+/^Subject:/                         WARN
+/^From:/                            WARN
+
+# Amavis/SpamAssassin results — captured by log shipper for SPF/DKIM/DMARC/spam fields
+/^X-Spam-Score:/                    WARN
+/^X-Spam-Status:/                   WARN
+/^X-Virus-Status:/                  WARN
+/^Authentication-Results:/          WARN
+/^ARC-Authentication-Results:/      WARN

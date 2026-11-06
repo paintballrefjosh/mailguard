@@ -1,0 +1,41 @@
+# ── Secrets / local config ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+certs/*
+!certs/.gitkeep
+*.key
+*.pem
+*.crt
+
+# ── Runtime state (bind-mounted by docker-compose) ───────────────────────────
+data/
+logs/
+config/geoip/
+*.mmdb
+
+# ── Generated postfix maps (rebuilt by postfix/entrypoint.sh) ────────────────
+postfix/maps/*.db
+postfix/maps/*.lmdb
+postfix/maps-dynamic/
+
+# ── Local tooling ────────────────────────────────────────────────────────────
+.claude/
+.vscode/
+.idea/
+
+# ── Build artifacts ──────────────────────────────────────────────────────────
+node_modules/
+dist/
+__pycache__/
+*.pyc
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.log
+*.bak
+*.swp
+.DS_Store
+
+# ── Not shipped with fresh installs ──────────────────────────────────────────
+# Operator-specific blocklist data
+helo_blocklist.sql

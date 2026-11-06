@@ -1,0 +1,141 @@
+# MailGuard Postfix Configuration — generated from main.cf.template at startup
+compatibility_level = 3.6
+myhostname = {{MAIL_HOSTNAME}}
+mydomain   = {{MAIL_DOMAIN}}
+myorigin   = $mydomain
+inet_interfaces = all
+inet_protocols = ipv4
+
+smtpd_banner = $myhostname ESMTP MailGuard
+biff = no
+readme_directory = no
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+maillog_file = /var/log/mail/mail.log
+
+# Header / body checks
+#   - maps-dynamic/* is regenerated from the blocklists table on every
+#     regex_subject / regex_body change (REJECT/HOLD/WARN actions).
+#   - maps-internal/header_checks is the static WARN-only map that logs
+#     Subject/From/auth headers so the log shipper can capture them.
+# Dynamic map is listed first so an explicit block/hold takes precedence
+# over the static WARN. PCRE evaluates each map left-to-right; "first
+# non-DUNNO action wins".
+header_checks = pcre:/etc/postfix/maps-dynamic/header_checks pcre:/etc/postfix/maps-internal/header_checks
+body_checks   = pcre:/etc/postfix/maps-dynamic/body_checks
+# Postfix only scans the first 50KB of the body by default. HTML phishing
+# emails routinely exceed that with inline CSS/images before the payload
+# text, so we raise it to ~5 MB. Anything bigger is almost certainly an
+# attachment-heavy message where body regex won't help anyway.
+body_checks_size_limit = 5242880
+
+# ── Relay destination ─────────────────────────────────────────────────────────
+relayhost = {{SMTP_RELAY_ENTRY}}
+
+# ── Domains this server accepts inbound mail for ──────────────────────────────
+relay_domains = {{RELAY_DOMAINS}}
+transport_maps = lmdb:/etc/postfix/maps-internal/transport
+
+# ── Local delivery disabled — this is a proxy ────────────────────────────────
+mydestination = $myhostname, localhost
+local_recipient_maps =
+local_transport = error:local delivery disabled
+
+# ── Trusted networks ──────────────────────────────────────────────────────────
+mynetworks = 127.0.0.0/8 172.16.0.0/12 192.168.0.0/16 10.0.0.0/8 [::1]/128
+
+# ── TLS ───────────────────────────────────────────────────────────────────────
+smtpd_tls_cert_file = /etc/postfix/certs/server.crt
+smtpd_tls_key_file  = /etc/postfix/certs/server.key
+smtpd_tls_security_level = may
+smtpd_tls_auth_only = yes
+smtp_tls_security_level = may
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database  = btree:${data_directory}/smtp_scache
+
+# ── MailGuard compound-rule milter ────────────────────────────────────────────
+# Multi-condition rules (e.g. From: domain AND body content) that Postfix's
+# line-oriented header_checks/body_checks maps cannot express. Runs during the
+# inbound SMTP session, so a match is a hard 5xx REJECT at end-of-DATA — the
+# message is never queued or delivered. milter_default_action=accept fails OPEN
+# so a dead/slow milter never blocks mail. The amavis re-inject listener (10025)
+# sets no_milters in receive_override_options, so this never double-processes.
+smtpd_milters = inet:mailguard-milter:8894
+non_smtpd_milters =
+milter_default_action = accept
+milter_protocol = 6
+milter_connect_timeout = 10s
+milter_content_timeout = 30s
+
+# ── Amavis content filter ─────────────────────────────────────────────────────
+content_filter = smtp-amavis:[amavis]:10024
+
+# ── SMTP Restrictions ─────────────────────────────────────────────────────────
+smtpd_delay_reject = no
+smtpd_helo_required = yes
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_helo_hostname,
+    reject_invalid_helo_hostname,
+    permit
+
+smtpd_sender_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain,
+    # Anti-spoof: an outside server claiming MAIL FROM one of our own
+    # RELAY_DOMAINS is forging us (our own mail comes from mynetworks or an
+    # authenticated submission user, both permitted above this line). The map
+    # is generated from RELAY_DOMAINS by the entrypoint.
+    permit_sasl_authenticated,
+    check_sender_access pcre:/etc/postfix/maps-internal/own_domain_senders,
+    check_sender_access pcre:/etc/postfix/maps-internal/sender_access,
+    permit
+
+smtpd_relay_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    reject_unauth_destination,
+    reject_non_fqdn_recipient,
+    check_recipient_access pcre:/etc/postfix/maps-internal/recipient_access,
+    check_sender_access pcre:/etc/postfix/maps-dynamic/sender_whitelist,
+    # MailGuard block policy (IP/domain/TLD/sender). MUST be at the recipient
+    # stage, not HELO: the sender (MAIL FROM) isn't known until RCPT, so a HELO
+    # placement silently skipped all sender-based blocks and let them fall
+    # through to greylist. Kept before greylist so a block short-circuits it.
+    #
+    # MUST also run BEFORE the check_client_access whitelists below: in Postfix
+    # an OK in an access map terminates the ENTIRE restriction list, so a
+    # trusted-client OK (e.g. Google's relay ranges) would otherwise skip this
+    # policy entirely — letting spam relayed through Gmail/Workspace bypass
+    # every IP/domain/TLD/sender/HELO block. Allow-domains (sender_whitelist)
+    # stay ABOVE so an explicit allow can still override a block.
+    check_policy_service inet:127.0.0.1:10030,
+    # Trusted-client whitelist: an OK here bypasses everything BELOW (greylist +
+    # RBLs) but NOT the MailGuard blocks above. REJECT entries stop bad nets.
+    check_client_access cidr:/etc/postfix/maps-internal/client_access,
+    check_client_access lmdb:/etc/postfix/maps-internal/whitelist,
+    {{GREYLIST_RESTRICTION}}
+    permit_sasl_authenticated,
+    reject_rbl_client zen.spamhaus.org,
+    reject_rbl_client bl.spamcop.net,
+    reject_rhsbl_sender dbl.spamhaus.org,
+    permit
+
+# ── Rate limiting (anvil) ─────────────────────────────────────────────────────
+smtpd_client_connection_rate_limit  = {{MAX_CONN_RATE}}
+smtpd_client_message_rate_limit     = {{MAX_MSG_RATE}}
+smtpd_client_recipient_rate_limit   = {{MAX_RCPT_RATE}}
+smtpd_client_connection_count_limit = {{MAX_CONN_COUNT}}
+anvil_rate_time_unit                = {{RATE_TIME_UNIT}}s
+smtpd_client_event_limit_exceptions = $mynetworks
+
+# ── Queue & Limits ────────────────────────────────────────────────────────────
+message_size_limit = 26214400
+mailbox_size_limit = 0
+queue_run_delay = 300s
+maximal_queue_lifetime = 5d

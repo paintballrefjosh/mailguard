@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background shield -->
+  <path d="M16 2 L30 8 L30 18 C30 25 16 31 16 31 C16 31 2 25 2 18 L2 8 Z"
+        fill="#4f46e5" stroke="#6366f1" stroke-width="1"/>
+  <!-- Envelope body -->
+  <rect x="7" y="11" width="18" height="12" rx="1.5"
+        fill="none" stroke="white" stroke-width="1.5"/>
+  <!-- Envelope flap V -->
+  <polyline points="7,11 16,18 25,11"
+            fill="none" stroke="white" stroke-width="1.5"
+            stroke-linejoin="round"/>
+</svg>

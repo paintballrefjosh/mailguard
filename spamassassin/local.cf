@@ -1,0 +1,16 @@
+required_score          5.0
+report_safe             0
+rewrite_header Subject  [SPAM]
+use_bayes               1
+bayes_auto_learn        1
+skip_rbl_checks         0
+
+# Trusted networks (adjust to your environment)
+trusted_networks        10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+
+# DNS-based URI blocklists
+# Note: urirhssub/urirhsbl require the URIDetail plugin loaded in .pre files
+# These are defined here but only activate if the plugin is available
+score URIBL_BLACK 8.0
+score URIBL_GREY  2.0
+score URIBL_RED   1.5

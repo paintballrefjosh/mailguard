@@ -1,0 +1,10 @@
+# Per-domain transport map
+# Format:  domain    smtp:[relay_host]:port
+#
+# Use this if different domains relay to different upstream servers.
+# If all domains go to the same server, just set relayhost in .env
+# and leave this file empty (but it must exist for postmap to build the db).
+#
+# Examples:
+# example.com         smtp:[192.0.2.10]:25
+# example.org         smtp:[192.0.2.10]:25

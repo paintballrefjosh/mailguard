@@ -1,0 +1,26 @@
+# CIDR-based client access map — managed by MailGuard
+# Format: ip/cidr    ACTION
+# Actions: OK (allow), REJECT, DUNNO (no opinion, continue checking)
+#
+# IMPORTANT: Entries here with REJECT will block ALL mail from that range
+# regardless of other checks. Leave this file with only REJECT entries for
+# known bad networks. Unknown senders fall through to RBL checks.
+#
+# Examples:
+# 192.0.2.0/24    REJECT Known spam network
+10.0.0.0/8      OK     Internal network - always allow
+
+# ── Trusted senders — bypass RBL checks ──────────────────────────────────────
+# Google mail servers (Gmail, Google Workspace)
+209.85.128.0/17     OK
+66.102.0.0/20       OK
+72.14.192.0/18      OK
+74.125.0.0/16       OK
+108.177.8.0/21      OK
+173.194.0.0/16      OK
+207.126.144.0/20    OK
+216.58.192.0/19     OK
+216.239.32.0/19     OK
+
+# ── Known bad networks — add REJECT entries here ──────────────────────────────
+# Example: 192.0.2.0/24    REJECT Known spam network

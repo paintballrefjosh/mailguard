@@ -1,0 +1,22 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+body { font-family: 'Inter', system-ui, sans-serif; }
+.card { @apply bg-gray-900 border border-gray-800 rounded-xl p-5; }
+.btn  { @apply px-4 py-2 rounded-lg font-medium transition-colors duration-150; }
+.btn-primary { @apply btn bg-indigo-600 hover:bg-indigo-500 text-white; }
+.btn-danger  { @apply btn bg-red-700 hover:bg-red-600 text-white; }
+.btn-ghost   { @apply btn bg-gray-800 hover:bg-gray-700 text-gray-200; }
+.input { @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500; }
+.badge-allow      { @apply inline-flex px-2 py-0.5 text-xs rounded-full bg-green-900 text-green-300; }
+.badge-block      { @apply inline-flex px-2 py-0.5 text-xs rounded-full bg-red-900 text-red-300; }
+.badge-flag       { @apply inline-flex px-2 py-0.5 text-xs rounded-full bg-yellow-900 text-yellow-300; }
+.badge-quarantine { @apply inline-flex px-2 py-0.5 text-xs rounded-full bg-purple-900 text-purple-300; }
+.badge-greylist   { @apply inline-flex px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300; }
+
+/* Deep-link highlight: flashes a matched rule/blocklist row a couple of times
+   so it's easy to spot after navigating from "View rule". */
+@keyframes mg-rule-flash {
+  0%, 100% { background-color: transparent; box-shadow: none; }
+  20%, 60% { background-color: rgba(99,102,241,0.35); box-shadow: inset 0 0 0 2px #6366f1; }
+  40%, 80% { background-color: rgba(99,102,241,0.08); box-shadow: inset 0 0 0 2px rgba(99,102,241,0.4); }
+}
+.mg-rule-flash { animation: mg-rule-flash 1.4s ease-in-out 2; }
